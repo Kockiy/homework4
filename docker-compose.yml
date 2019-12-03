@@ -63,7 +63,7 @@ services:
 #    networks:
 #      - secret
   loadbalancer:
-    image: traefik
+    image: traefik:v1.7.19-alpine
     command: --docker
     links: 
       - hits
