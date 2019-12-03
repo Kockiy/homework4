@@ -1,0 +1,83 @@
+version: '3.7'
+services:
+  hits:
+    build: .
+    labels: 
+      - "traefik.frontend.rule=HostRegexp:{catchall:.*}"
+    image: ubuntu
+    ports:
+     - 5000:5000
+    volumes:
+      - ./logs:/Work/logs
+    depends_on:
+      - redis
+    networks:
+      - public
+      - secret
+
+  redis:
+    container_name: redis
+    image: redis:4.0.2-alpine
+    volumes:
+      - "./data/redis-master:/data"
+    networks:
+      - secret 
+
+  redis-slave:
+    container_name: redis-slave
+    image: redis:4.0.2-alpine
+    command: redis-server --slaveof redis 6379
+    volumes:
+      - "./data/redis-slave:/data"
+    links:
+      - redis
+    networks:
+      - secret
+    
+  redis-sentinel-1:
+    container_name: redis-sentinel-1
+    build: redis-sentinel
+    links:
+      - redis
+    networks:
+      - secret
+
+  redis-sentinel-2:
+    container_name: redis-sentinel-2
+    build: redis-sentinel
+    links:
+      - redis
+    networks:
+      - secret
+
+  redis-sentinel-3:
+    container_name: redis-sentinel-3
+    build: redis-sentinel
+    links:
+      - redis
+    networks:
+      - secret
+
+#  redis:
+#    image: redis:alpine
+#    networks:
+#      - secret
+  loadbalancer:
+    image: traefik
+    command: --docker
+    links: 
+      - hits
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 8080:80
+    networks:
+      - public
+volumes:
+  logs:
+    driver: local
+networks:
+  secret:
+    driver: bridge
+  public:
+    driver: bridge
